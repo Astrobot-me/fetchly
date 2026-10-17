@@ -39,7 +39,9 @@ $Root    = Split-Path -Parent $Backend
 $Web     = Join-Path $Root 'ytgui-web'
 $OutDir  = Join-Path $Backend "out/release/$Version"
 $Tag     = "v$Version"
-$OnWindows = $IsWindows -or $env:OS -eq 'Windows_NT'
+# $IsWindows doesn't exist in Windows PowerShell 5.1 (and strict mode
+# rejects undefined variables), so ask .NET instead.
+$OnWindows = [Environment]::OSVersion.Platform -eq 'Win32NT'
 
 $Targets = @(
   @{ GOOS = 'windows'; GOARCH = 'amd64'; Name = 'fetchly-windows-amd64.exe'; Label = 'Windows (Intel/AMD 64-bit)' },
@@ -50,6 +52,12 @@ $Launchers = @('start.bat', 'start.command', 'README.txt') |
   ForEach-Object { Join-Path $Backend "launchers/$_" }
 
 # ---- Output helpers -------------------------------------------------------
+# Keep this file pure ASCII: Windows PowerShell 5.1 reads a script without
+# a BOM as ANSI, so literal symbols would break parsing. Build them here.
+$Tick = [char]0x2713; $Cross = [char]0x2717; $Arrow = [char]0x2192
+$Up = [char]0x2191; $Dots = [char]0x2026
+try { [Console]::OutputEncoding = [Text.Encoding]::UTF8 } catch { }
+
 $TotalSteps = if ($Publish) { 9 } else { 8 }
 $script:StepNo = 0
 $script:StepClock = $null
@@ -65,12 +73,12 @@ function Step($msg) {
 # Closes the current step with its elapsed time.
 function Done {
   if ($script:StepClock) {
-    Write-Host ("      ✓ done in {0:N1}s" -f $script:StepClock.Elapsed.TotalSeconds) -ForegroundColor Green
+    Write-Host ("      $Tick done in {0:N1}s" -f $script:StepClock.Elapsed.TotalSeconds) -ForegroundColor Green
     $script:StepClock = $null
   }
 }
 function Info($msg) { Write-Host "      $msg" -ForegroundColor Gray }
-function Ok($msg)   { Write-Host "      ✓ $msg" -ForegroundColor Green }
+function Ok($msg)   { Write-Host "      $Tick $msg" -ForegroundColor Green }
 function Warn($msg) { Write-Host "      ! $msg" -ForegroundColor Yellow }
 function Size($path) { "{0:N1} MB" -f ((Get-Item -LiteralPath $path).Length / 1MB) }
 
@@ -83,7 +91,7 @@ function Exec([scriptblock]$cmd) {
 
 trap {
   Write-Host ""
-  Write-Host "✗ Release failed during step $($script:StepNo)/${TotalSteps}: $_" -ForegroundColor Red
+  Write-Host "$Cross Release failed during step $($script:StepNo)/${TotalSteps}: $_" -ForegroundColor Red
   Write-Host ("  after {0:N1}s" -f $Clock.Elapsed.TotalSeconds) -ForegroundColor Red
   exit 1
 }
@@ -149,9 +157,9 @@ if ($OnWindows) {
 Step "Building the UI"
 Push-Location $Web
 try {
-  Info "Installing exact dependency versions from package-lock.json (npm ci)…"
+  Info "Installing exact dependency versions from package-lock.json (npm ci)$Dots"
   Exec { npm ci --no-audit --no-fund }
-  Info "Type-checking and bundling (npm run build)…"
+  Info "Type-checking and bundling (npm run build)$Dots"
   Exec { npm run build }
 } finally { Pop-Location }
 $uiFiles = @(Get-ChildItem (Join-Path $Web 'dist') -Recurse -File)
@@ -165,7 +173,7 @@ $old = @(Get-ChildItem $embedDist -Force | Where-Object Name -ne '.gitkeep')
 $old | Remove-Item -Recurse -Force
 Info "Removed $($old.Count) old item(s) from web/dist"
 Copy-Item (Join-Path $Web 'dist/*') $embedDist -Recurse -Force
-Ok "Copied ytgui-web/dist → ytgui-backend/web/dist"
+Ok "Copied ytgui-web/dist $Arrow ytgui-backend/web/dist"
 
 # ---- 5. Binaries ----------------------------------------------------------
 Step "Building the backend for $($Targets.Count) platforms"
@@ -185,7 +193,7 @@ try {
   $i = 0
   foreach ($t in $Targets) {
     $i++
-    Info "($i/$($Targets.Count)) $($t.Label)  [$($t.GOOS)/$($t.GOARCH)]…"
+    Info "($i/$($Targets.Count)) $($t.Label)  [$($t.GOOS)/$($t.GOARCH)]$Dots"
     $env:GOOS = $t.GOOS; $env:GOARCH = $t.GOARCH; $env:CGO_ENABLED = '0'
     $sw = [Diagnostics.Stopwatch]::StartNew()
     Exec { go build -trimpath -ldflags $ldflags -o (Join-Path $OutDir $t.Name) . }
@@ -240,7 +248,7 @@ Fetchly $Version (commit $commit)
 Download **Fetchly.zip**, unzip it, and double-click start.bat (Windows) or start.command (Mac).
 See README.txt inside the zip for first-run steps.
 "@
-  foreach ($f in $files) { Info ("↑ {0}  ({1})" -f (Split-Path -Leaf $f), (Size $f)) }
+  foreach ($f in $files) { Info ("$Up {0}  ({1})" -f (Split-Path -Leaf $f), (Size $f)) }
   Exec { gh release create $Tag --repo $Repo --draft --title "Fetchly $Version" --notes $notes @files }
   Ok "Draft release $Tag created"
 }
