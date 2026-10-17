@@ -7,7 +7,7 @@ chcp 65001 >nul
 
 rem ---- Release settings -------------------------------------------------
 rem GitHub repository that hosts the release files (owner/name).
-set "REPO=OWNER/REPO"
+set "REPO=astrobot-me/fetchly"
 set "ASSET=ytgui-windows-amd64.exe"
 rem ----------------------------------------------------------------------
 

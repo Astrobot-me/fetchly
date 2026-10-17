@@ -5,7 +5,7 @@
 
 # ---- Release settings --------------------------------------------------
 # GitHub repository that hosts the release files (owner/name).
-REPO="OWNER/REPO"
+REPO="astrobot-me/fetchly"
 # -----------------------------------------------------------------------
 
 # Apple Silicon reports hw.optional.arm64=1, even under Rosetta.
