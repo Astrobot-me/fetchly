@@ -9,11 +9,13 @@ import { actions, useStore } from "../state/store";
 export function Settings() {
   return (
     <div className="page page--settings">
-      <h1 className="page-title">Settings</h1>
+      <header className="page-head">
+        <h1 className="page-title">Settings</h1>
+        <p className="page-sub">Where videos go, which quality to pick first, and the tools behind the scenes.</p>
+      </header>
       <DownloadSettings />
       <ToolsSection />
       <HistorySection />
-      <AboutSection />
     </div>
   );
 }
@@ -257,24 +259,6 @@ function HistorySection() {
         onConfirm={clear}
         onCancel={() => setConfirm(false)}
       />
-    </section>
-  );
-}
-
-function AboutSection() {
-  const { tools } = useStore();
-  return (
-    <section className="card section about" aria-labelledby="about-title">
-      <h2 id="about-title" className="section-title">
-        About
-      </h2>
-      <p>
-        Fetchly version <strong>{tools?.appVersion ?? "—"}</strong>
-      </p>
-      <p className="muted">
-        This app uses yt-dlp (Unlicense), FFmpeg (GPL builds by BtbN on Windows and Martin Riedl on macOS) and Deno
-        (MIT). They are downloaded from their official sources.
-      </p>
     </section>
   );
 }

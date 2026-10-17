@@ -1,12 +1,18 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="referrer" content="no-referrer" />
-    <meta name="color-scheme" content="light dark" />
+    <meta name="color-scheme" content="dark light" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <title>Fetchly</title>
+    <script src="/theme-init.js"></script>
+    <style>
+      html { background: #090a11; }
+      html[data-theme="light"] { background: #f4f5fa; }
+    </style>
   </head>
   <body>
     <div id="root"></div>

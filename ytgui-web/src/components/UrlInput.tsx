@@ -1,4 +1,7 @@
 import { useRef } from "react";
+import { ArrowRight, Clipboard, DownloadIcon, LinkIcon } from "./Icons";
+
+export const EXAMPLE_URL = "https://www.youtube.com/watch?v=jNQXAC9IVRw";
 
 interface Props {
   value: string;
@@ -28,41 +31,66 @@ export function UrlInput({ value, onChange, onSubmit, loading }: Props) {
         if (!loading && value.trim()) onSubmit();
       }}
     >
-      <label htmlFor="url" className="urlbox__label">
-        Paste a YouTube link
-      </label>
-      <div className="urlbox__row">
-        <div className="urlbox__field">
-          <input
-            ref={inputRef}
-            id="url"
-            className="urlbox__input"
-            type="text"
-            inputMode="url"
-            autoComplete="off"
-            spellCheck={false}
-            placeholder="https://www.youtube.com/watch?v=…"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            disabled={loading}
-          />
-          <button type="button" className="btn btn--soft urlbox__paste" onClick={paste} disabled={loading}>
-            <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18">
-              <path
-                d="M9 4h6m-6 0a2 2 0 0 0-2 2v0h10v0a2 2 0 0 0-2-2M9 4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1M7 6H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-1"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-              />
-            </svg>
-            Paste
-          </button>
+      <div className="urlbox__head">
+        <span className="iconsq" aria-hidden="true">
+          <LinkIcon size={20} />
+        </span>
+        <div className="urlbox__heading">
+          <label htmlFor="url" className="urlbox__label">
+            Paste a YouTube link
+          </label>
+          <p id="url-hint" className="urlbox__sub">
+            A video or Shorts link
+          </p>
         </div>
-        <button type="submit" className="btn btn--primary btn--xl" disabled={loading || !value.trim()}>
-          {loading ? "Looking…" : "Find video"}
+        <button
+          type="button"
+          className="btn btn--outline btn--sm urlbox__example"
+          disabled={loading}
+          onClick={() => {
+            onChange(EXAMPLE_URL);
+            inputRef.current?.focus();
+          }}
+        >
+          Try example
+          <ArrowRight size={14} />
         </button>
       </div>
+
+      <div className="urlbox__field">
+        <LinkIcon size={18} className="urlbox__fieldicon" />
+        <input
+          ref={inputRef}
+          id="url"
+          className="urlbox__input"
+          type="text"
+          inputMode="url"
+          autoComplete="off"
+          spellCheck={false}
+          placeholder="https://www.youtube.com/watch?v=…"
+          aria-describedby="url-hint"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          disabled={loading}
+        />
+        <button type="button" className="btn btn--soft btn--sm urlbox__paste" onClick={paste} disabled={loading}>
+          <Clipboard size={16} />
+          Paste
+        </button>
+      </div>
+
+      <button type="submit" className="btn btn--primary btn--xl btn--block" disabled={loading || !value.trim()}>
+        <DownloadIcon size={20} />
+        {loading ? "Looking up the video…" : "Get download options"}
+        {!loading && <ArrowRight size={18} className="btn__trail" />}
+      </button>
+
+      <p className="urlbox__foot">
+        <span>No sign-up</span>
+        <span>No ads</span>
+        <span>Runs on your computer</span>
+        <span>Free</span>
+      </p>
     </form>
   );
 }

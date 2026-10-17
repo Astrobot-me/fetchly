@@ -1,18 +1,31 @@
 import { useEffect, useState } from "react";
 import { api, getToken } from "./api/client";
+import { Backdrop } from "./components/Backdrop";
 import { ConfirmDialog } from "./components/ConfirmDialog";
+import { Bolt, DownloadIcon, Gear, Heart, Power } from "./components/Icons";
+import { ThemeToggle } from "./components/ThemeToggle";
 import { UpdateBanner } from "./components/UpdateBanner";
 import { BadToken } from "./pages/BadToken";
+import { Credits } from "./pages/Credits";
 import { Home } from "./pages/Home";
 import { Settings } from "./pages/Settings";
 import { Setup } from "./pages/Setup";
 import { Stopped } from "./pages/Stopped";
 import { actions, startStore, useStore } from "./state/store";
 
-type Tab = "home" | "settings";
+type Tab = "home" | "settings" | "credits";
+
+const TABS: { id: Tab; label: string; hash: string; Icon: typeof Gear }[] = [
+  { id: "home", label: "Download", hash: "", Icon: DownloadIcon },
+  { id: "settings", label: "Settings", hash: "#settings", Icon: Gear },
+  { id: "credits", label: "Credits", hash: "#credits", Icon: Heart },
+];
 
 function tabFromHash(): Tab {
-  return window.location.hash === "#settings" ? "settings" : "home";
+  const h = window.location.hash;
+  if (h === "#settings") return "settings";
+  if (h === "#credits") return "credits";
+  return "home";
 }
 
 export function App() {
@@ -47,7 +60,7 @@ export function App() {
 
   const go = (t: Tab) => {
     setTab(t);
-    const hash = t === "settings" ? "#settings" : "";
+    const hash = TABS.find((x) => x.id === t)?.hash ?? "";
     window.history.replaceState(window.history.state, "", window.location.pathname + window.location.search + hash);
     window.scrollTo({ top: 0 });
   };
@@ -62,15 +75,29 @@ export function App() {
     actions.setStopped();
   };
 
-  if (s.badToken) return <BadToken />;
-  if (s.stopped) return <Stopped />;
+  if (s.badToken)
+    return (
+      <>
+        <Backdrop />
+        <BadToken />
+      </>
+    );
+  if (s.stopped)
+    return (
+      <>
+        <Backdrop />
+        <Stopped />
+      </>
+    );
 
   const showSetup = !!tools && (!tools.ready || inSetup);
+  const showTabs = !showSetup && s.hydrated;
 
   return (
     <div className="app">
+      <Backdrop />
       <header className="topbar">
-        <div className="topbar__inner">
+        <nav className="nav" aria-label="Main">
           <a
             className="brand"
             href="#"
@@ -79,65 +106,53 @@ export function App() {
               go("home");
             }}
           >
-            <span className="brand__mark" aria-hidden="true">
-              <svg viewBox="0 0 32 32" width="30" height="30">
-                <rect width="32" height="32" rx="10" fill="currentColor" />
-                <path
-                  d="M16 8v12m-5.5-5.5L16 20l5.5-5.5M10 25h12"
-                  fill="none"
-                  stroke="var(--sun)"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+            <span className="brand__mark">
+              <Bolt size={24} />
             </span>
-            <span className="brand__name">Fetchly</span>
+            <span className="brand__name">
+              Fetch<span className="brand__ly">ly</span>
+            </span>
           </a>
 
-          {!showSetup && s.hydrated && (
-            <nav className="tabs" aria-label="Main">
-              <button
-                type="button"
-                className={`tabs__btn${tab === "home" ? " is-on" : ""}`}
-                aria-current={tab === "home" ? "page" : undefined}
-                onClick={() => go("home")}
-              >
-                Download
-              </button>
-              <button
-                type="button"
-                className={`tabs__btn${tab === "settings" ? " is-on" : ""}`}
-                aria-current={tab === "settings" ? "page" : undefined}
-                onClick={() => go("settings")}
-              >
-                Settings
-              </button>
-            </nav>
+          {showTabs && (
+            <div className="nav__tabs">
+              {TABS.map(({ id, label, Icon }) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={`nav__tab${tab === id ? " is-on" : ""}`}
+                  aria-current={tab === id ? "page" : undefined}
+                  onClick={() => go(id)}
+                >
+                  <Icon size={18} />
+                  <span className="nav__label">{label}</span>
+                </button>
+              ))}
+            </div>
           )}
 
-          <button type="button" className="btn btn--quit" onClick={() => setQuitOpen(true)}>
-            <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16">
-              <path
-                d="M12 3v8M7.05 6.05a7 7 0 1 0 9.9 0"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-              />
-            </svg>
-            Quit
+          <span className="nav__sep" aria-hidden="true" />
+          <ThemeToggle />
+          <button
+            type="button"
+            className="navbtn navbtn--quit"
+            onClick={() => setQuitOpen(true)}
+            aria-label="Quit Fetchly"
+            title="Quit Fetchly"
+          >
+            <Power size={18} />
           </button>
-        </div>
+        </nav>
       </header>
 
       {s.connection === "reconnecting" && s.hydrated && (
         <div className="reconnect" role="status">
+          <span className="spinner spinner--sm" aria-hidden="true" />
           Reconnecting…
         </div>
       )}
 
-      <main className="main">
+      <main className={`main main--${showSetup ? "setup" : tab}`}>
         {!s.hydrated ? (
           <div className="loading" role="status">
             <span className="spinner" aria-hidden="true" />
@@ -148,7 +163,7 @@ export function App() {
         ) : (
           <>
             <UpdateBanner tools={tools} onOpenSettings={() => go("settings")} />
-            {tab === "home" ? <Home /> : <Settings />}
+            {tab === "home" ? <Home /> : tab === "settings" ? <Settings /> : <Credits />}
           </>
         )}
       </main>

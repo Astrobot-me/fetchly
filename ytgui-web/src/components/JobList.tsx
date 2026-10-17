@@ -3,6 +3,7 @@ import { api, errorMessage } from "../api/client";
 import type { Job, ToolProgress } from "../api/types";
 import { fileName, formatEta, formatSpeed, qualityLabel } from "../format";
 import { actions, useStore } from "../state/store";
+import { Folder, Retry } from "./Icons";
 import { ProgressBar } from "./ProgressBar";
 
 const FINISHED: Job["state"][] = ["done", "failed", "canceled"];
@@ -69,8 +70,8 @@ export function JobList() {
 
       {jobs.length === 0 ? (
         <div className="empty">
-          <p className="empty__title">Nothing here yet</p>
-          <p className="empty__text">Videos you download will show up here while they're saving.</p>
+          <p className="empty__title">No downloads yet</p>
+          <p className="empty__text">Paste a link above. Videos show up here while they're saving.</p>
         </div>
       ) : (
         <ul className="joblist">
@@ -216,6 +217,7 @@ function JobRow({ job, updaterBusy, updaterProgress }: RowProps) {
             disabled={busy}
             onClick={() => act(() => api.openFolder(job.filePath ?? undefined))}
           >
+            <Folder size={16} />
             Show in folder
           </button>
         )}
@@ -226,6 +228,7 @@ function JobRow({ job, updaterBusy, updaterProgress }: RowProps) {
             disabled={busy}
             onClick={() => act(async () => actions.upsertJob(await api.retryJob(job.id)))}
           >
+            <Retry size={16} />
             Retry
           </button>
         )}

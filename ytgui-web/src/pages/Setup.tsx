@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, errorMessage } from "../api/client";
+import { Bolt } from "../components/Icons";
 import { ToolStatus } from "../components/ToolStatus";
 import { useStore } from "../state/store";
 
@@ -49,6 +50,10 @@ export function Setup() {
   return (
     <div className="page page--narrow">
       <section className="card setup">
+        <span className="setup__mark" aria-hidden="true">
+          <Bolt size={28} />
+        </span>
+        <p className="eyebrow">First run</p>
         <h1 className="setup__title">{heading}</h1>
         <p className="setup__sub">{sub}</p>
 
