@@ -10,8 +10,10 @@ import (
 const AppName = "ytgui"
 
 // AppData returns the app-data root, creating it if needed.
-//   Windows: %LOCALAPPDATA%\ytgui
-//   macOS:   ~/Library/Application Support/ytgui
+//
+//	Windows: %LOCALAPPDATA%\ytgui
+//	macOS:   ~/Library/Application Support/ytgui
+//
 // YTGUI_HOME overrides it (useful for tests and dev).
 func AppData() (string, error) {
 	dir := os.Getenv("YTGUI_HOME")
