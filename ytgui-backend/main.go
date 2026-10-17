@@ -42,6 +42,14 @@ func run(args []string) error {
 		cmd = args[0]
 	}
 	switch cmd {
+	case "", "serve", "--no-browser":
+		openBrowser := true
+		for _, a := range args {
+			if a == "--no-browser" {
+				openBrowser = false
+			}
+		}
+		return serve(appData, upd, openBrowser)
 	case "update":
 		return cliUpdate(upd, args[1:])
 	case "rollback":
