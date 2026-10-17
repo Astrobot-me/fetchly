@@ -38,6 +38,15 @@ $Root    = Split-Path -Parent $PSScriptRoot
 $Backend = Join-Path $Root 'ytgui-backend'
 $Web     = Join-Path $Root 'ytgui-web'
 $OutDir  = Join-Path $Root "out/release/$Version"
+$NotesFile = Join-Path $Root "release-notes/$Version.md"
+
+# Keep build caches inside the repo (.cache/ is git-ignored) unless the
+# caller set their own, so a release doesn't fill the system drive.
+$CacheDir = Join-Path $Root '.cache'
+if (-not $env:GOCACHE)          { $env:GOCACHE = Join-Path $CacheDir 'go-build' }
+if (-not $env:GOTMPDIR)         { $env:GOTMPDIR = Join-Path $CacheDir 'go-tmp' }
+if (-not $env:npm_config_cache) { $env:npm_config_cache = Join-Path $CacheDir 'npm' }
+New-Item -ItemType Directory -Force $env:GOCACHE, $env:GOTMPDIR, $env:npm_config_cache | Out-Null
 $Tag     = "v$Version"
 # $IsWindows doesn't exist in Windows PowerShell 5.1 (and strict mode
 # rejects undefined variables), so ask .NET instead.
@@ -102,6 +111,9 @@ Info "Repository : $Repo"
 Info "Publish    : $(if ($Publish) { 'yes, as a draft release' } else { 'no (build only)' })"
 Info "Feed URL   : $(if ($FeedUrl) { $FeedUrl } else { '(none; the built-in tool list is used)' })"
 Info "Output     : $OutDir"
+Info "Go cache   : $env:GOCACHE"
+Info "npm cache  : $env:npm_config_cache"
+Info "Notes      : $(if (Test-Path $NotesFile) { "release-notes/$Version.md" } else { '(none; a short default text is used)' })"
 
 # ---- 1. Checks ------------------------------------------------------------
 Step "Checking tools"
@@ -241,14 +253,15 @@ Ok "checksums.txt covers $($assets.Count) files"
 $files = @($assets + 'checksums.txt') | ForEach-Object { Join-Path $OutDir $_ }
 if ($Publish) {
   Step "Uploading draft release $Tag to $Repo"
-  $notes = @"
-Fetchly $Version (commit $commit)
-
-Download **Fetchly.zip**, unzip it, and double-click start.bat (Windows) or start.command (Mac).
-See README.txt inside the zip for first-run steps.
-"@
+  if (Test-Path $NotesFile) {
+    Info "Release notes: release-notes/$Version.md"
+    $notesArgs = @('--notes-file', $NotesFile)
+  } else {
+    Warn "No release-notes/$Version.md; using a short default text"
+    $notesArgs = @('--notes', "Fetchly $Version (commit $commit)`n`nDownload **Fetchly.zip**, unzip it, and double-click start.bat (Windows) or start.command (Mac). See README.txt inside the zip for first-run steps.")
+  }
   foreach ($f in $files) { Info ("$Up {0}  ({1})" -f (Split-Path -Leaf $f), (Size $f)) }
-  Exec { gh release create $Tag --repo $Repo --draft --title "Fetchly $Version" --notes $notes @files }
+  Exec { gh release create $Tag --repo $Repo --draft --title "Fetchly $Version" @notesArgs @files }
   Ok "Draft release $Tag created"
 }
 Done
