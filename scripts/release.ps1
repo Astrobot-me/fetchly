@@ -115,7 +115,7 @@ trap {
 Write-Host ""
 Write-Host "Fetchly release $Version" -ForegroundColor White
 Info "Repository : $Repo"
-Info "Notes      : $(if ($Release) { "yes, from release-notes/$Version.md" } else { 'no (add -Release)' })"
+Info "Notes      : $(if ($Release) { "yes, writes release-notes/$Version.md (kept if it already exists)" } else { 'no (add -Release)' })"
 Info "Publish    : $(if ($Publish) { 'yes, as a draft release' } else { 'no (add -Publish)' })"
 Info "Feed URL   : $(if ($FeedUrl) { $FeedUrl } else { '(none; the built-in tool list is used)' })"
 Info "Output     : $OutDir"
@@ -144,11 +144,6 @@ if ($Publish) {
 
 # ---- 2. Repository --------------------------------------------------------
 Step "Checking the repository"
-if ($Release) {
-  # Fail now rather than after a full build.
-  if (-not (Test-Path $NotesFile)) { throw "release-notes/$Version.md is missing. Write it first; it becomes the text of the GitHub release." }
-  Ok "Release notes found: release-notes/$Version.md"
-}
 $commit = (git -C $Root rev-parse --short HEAD).Trim()
 $branch = (git -C $Root rev-parse --abbrev-ref HEAD).Trim()
 $subject = (git -C $Root log -1 --format=%s).Trim()
@@ -264,11 +259,26 @@ Ok "checksums.txt covers $($assets.Count) files"
 # ---- 9. Release notes (-Release) ------------------------------------------
 $PreparedNotes = Join-Path $OutDir 'release-notes.md'
 if ($Release) {
-  Step "Preparing release notes"
-  if (-not (Test-Path $NotesFile)) {
-    throw "release-notes/$Version.md is missing. Write it first; it becomes the text of the GitHub release."
+  Step "Writing release notes"
+  if (Test-Path $NotesFile) {
+    # Never overwrite notes that may have been edited by hand.
+    Ok "release-notes/$Version.md already exists; kept as written (delete it to regenerate)"
+  } else {
+    $template = Join-Path $Root 'release-notes/TEMPLATE.md'
+    if (-not (Test-Path $template)) { throw "release-notes/TEMPLATE.md is missing; it is needed to write new release notes." }
+    # Changes since the previous v* tag, or since the first commit if none.
+    $prevTag = @(git -C $Root tag --list 'v*' --sort=-v:refname) | Where-Object { $_ -ne $Tag } | Select-Object -First 1
+    $range = if ($prevTag) { "$prevTag..HEAD" } else { 'HEAD' }
+    $changes = @(git -C $Root log --no-merges --format='- %s' $range)
+    if ($changes.Count -eq 0) { $changes = @('- No changes recorded.') }
+    Info "Changes since $(if ($prevTag) { $prevTag } else { 'the first commit' }): $($changes.Count) commit(s)"
+    $text = (Get-Content -Raw -Encoding UTF8 $template).
+      Replace('{{VERSION}}', $Version).
+      Replace('{{DATE}}', (Get-Date -Format 'yyyy-MM-dd')).
+      Replace('{{CHANGES}}', ($changes -join "`n"))
+    [IO.File]::WriteAllText($NotesFile, $text, (New-Object Text.UTF8Encoding $false))
+    Ok "Wrote release-notes/$Version.md from TEMPLATE.md; review and edit it, then commit it"
   }
-  Info "Source: release-notes/$Version.md"
   $body = (Get-Content -Raw -Encoding UTF8 $NotesFile).TrimEnd()
   # Append the checksums so people can verify downloads from the notes alone.
   $sums = (Get-Content -Raw (Join-Path $OutDir 'checksums.txt')).TrimEnd()

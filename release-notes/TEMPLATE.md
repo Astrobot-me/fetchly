@@ -1,0 +1,44 @@
+## Fetchly {{VERSION}}
+
+Released {{DATE}}.
+
+### What's changed
+
+{{CHANGES}}
+
+### Get started
+
+1. Download **Fetchly.zip** below and unzip it.
+2. Double-click **start.bat** (Windows) or **start.command** (Mac).
+3. Your browser opens Fetchly. Keep the small window open while you use it; close it (or press **Quit**) to stop.
+
+Already using Fetchly? Your existing start files keep working.
+
+**Windows:** if you see "Windows protected your PC", click **More info**, then **Run anyway**.
+**Mac:** right-click **start.command**, choose **Open**, then click **Open** again. You only need to do this once.
+
+### Requirements
+
+- **Windows 10 or 11**, 64-bit.
+- **macOS** on Apple Silicon or Intel.
+- About 400 MB of free space for the app and its tools, plus room for your videos.
+
+### Third-party software
+
+Fetchly downloads these tools from their official sources and checks each download against its published SHA-256 checksum before using it:
+
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp): Unlicense
+- [FFmpeg](https://ffmpeg.org): GPL builds, from BtbN on Windows and Martin Riedl on macOS
+- [Deno](https://deno.com): MIT
+
+Only download videos you have the right to download.
+
+### Files
+
+| File | For |
+|---|---|
+| `Fetchly.zip` | **Everyone: download this one** |
+| `fetchly-windows-amd64.exe` | Downloaded by start.bat automatically |
+| `fetchly-darwin-arm64` | Downloaded by start.command on Apple Silicon Macs |
+| `fetchly-darwin-amd64` | Downloaded by start.command on Intel Macs |
+| `checksums.txt` | SHA-256 checksums of the files above |
