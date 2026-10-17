@@ -1,0 +1,16 @@
+# Node / Vite
+node_modules/
+ytgui-web/dist/
+
+# Go build output
+ytgui-backend/out/
+
+# Embedded UI is copied in from ytgui-web at build time
+ytgui-backend/web/dist/*
+!ytgui-backend/web/dist/.gitkeep
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
