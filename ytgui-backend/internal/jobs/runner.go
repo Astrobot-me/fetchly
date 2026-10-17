@@ -45,7 +45,7 @@ func (m *Manager) baseArgs() ([]string, func(), error) {
 	}
 	ff, rel, err := m.upd.Acquire(updater.FFmpeg)
 	if err != nil {
-		return nil, nil, &UserError{Msg: "A helper tool (FFmpeg) isn't installed yet. Open Settings to install it.", Code: "not_ready"}
+		return nil, nil, &UserError{Msg: "A helper tool (FFmpeg) isn't installed yet. Open Settings to install it.", Code: "not_ready", Permanent: true}
 	}
 	releases = append(releases, rel)
 	args = append(args, "--ffmpeg-location", ff.Dir)
@@ -64,7 +64,7 @@ func (m *Manager) runWithRetries(j *Job) {
 			j.State, j.Attempt, j.Phase, j.Percent = Running, attempt, "Starting", 0
 			j.Speed, j.ETA, j.Error = nil, nil, nil
 		})
-		file, err := m.runOnce(j)
+		file, skipped, err := m.runOnce(j)
 
 		m.mu.Lock()
 		canceled := j.canceled
@@ -74,7 +74,11 @@ func (m *Manager) runWithRetries(j *Job) {
 			return
 		}
 		if err == nil {
-			m.finish(j, Done, file, nil)
+			if skipped {
+				m.finishWithPhase(j, file, "Already downloaded")
+			} else {
+				m.finish(j, Done, file, nil)
+			}
 			return
 		}
 		var ue *UserError
@@ -118,13 +122,23 @@ func (m *Manager) sleepUnlessCanceled(j *Job, d time.Duration) bool {
 }
 
 func (m *Manager) finish(j *Job, st State, file *string, ue *UserError) {
+	m.finishAs(j, st, file, ue, "Finished")
+}
+
+// finishWithPhase marks a job done with a custom phase, e.g. when the
+// file was already on disk and nothing was downloaded.
+func (m *Manager) finishWithPhase(j *Job, file *string, phase string) {
+	m.finishAs(j, Done, file, nil, phase)
+}
+
+func (m *Manager) finishAs(j *Job, st State, file *string, ue *UserError, donePhase string) {
 	now := time.Now()
 	pause := false
 	m.update(j, false, func(j *Job) {
 		j.State, j.FinishedAt, j.Speed, j.ETA, j.cancel = st, &now, nil, nil, nil
 		switch st {
 		case Done:
-			j.Phase, j.Percent, j.FilePath, j.Error = "Finished", 100, file, nil
+			j.Phase, j.Percent, j.FilePath, j.Error = donePhase, 100, file, nil
 		case Canceled:
 			j.Phase, j.Error = "Canceled", nil
 		case Failed:
@@ -162,24 +176,37 @@ type progressJSON struct {
 	FragmentCount      *float64 `json:"fragment_count"`
 }
 
-// runOnce spawns yt-dlp for one attempt. It returns the final file path.
-func (m *Manager) runOnce(j *Job) (*string, error) {
+// CacheDirName holds a download's pieces (separate video and audio
+// streams, .part files) while it runs; only the finished file is moved
+// out into the download folder.
+const CacheDirName = ".cache"
+
+// runOnce spawns yt-dlp for one attempt. It returns the final file path
+// and whether yt-dlp skipped the download because the file already existed.
+func (m *Manager) runOnce(j *Job) (*string, bool, error) {
 	settings := m.store.Settings()
 	if err := os.MkdirAll(settings.DownloadDir, 0o755); err != nil {
-		return nil, &UserError{Msg: "The download folder can't be used. Choose a different folder in Settings.", Code: "permission", Permanent: true}
+		return nil, false, &UserError{Msg: "The download folder can't be used. Choose a different folder in Settings.", Code: "permission", Permanent: true}
 	}
+	cacheDir := filepath.Join(settings.DownloadDir, CacheDirName)
+	if err := os.MkdirAll(cacheDir, 0o755); err != nil {
+		return nil, false, &UserError{Msg: "The download folder can't be used. Choose a different folder in Settings.", Code: "permission", Permanent: true}
+	}
+	osutil.HideFile(cacheDir)
+	cleanStale(cacheDir, 24*time.Hour)
+
 	fmtArgs, err := formatArgs(j.Quality)
 	if err != nil {
-		return nil, &UserError{Msg: err.Error(), Code: "bad_quality", Permanent: true}
+		return nil, false, &UserError{Msg: err.Error(), Code: "bad_quality", Permanent: true}
 	}
 	args, release, err := m.baseArgs()
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	defer release()
 	ytdlp, releaseY, err := m.upd.Acquire(updater.YtDlp)
 	if err != nil {
-		return nil, &UserError{Msg: "The downloader isn't installed yet. Open Settings to install it.", Code: "not_ready"}
+		return nil, false, &UserError{Msg: "The downloader isn't installed yet. Open Settings to install it.", Code: "not_ready", Permanent: true}
 	}
 	defer releaseY()
 
@@ -190,6 +217,7 @@ func (m *Manager) runOnce(j *Job) (*string, error) {
 		"--print", "after_move:"+markFile+"%(filepath)s",
 		"--windows-filenames", "--no-mtime",
 		"-P", settings.DownloadDir,
+		"-P", "temp:"+cacheDir,
 		"-o", "%(title).150B [%(id)s] "+fileSuffix(j.Quality)+".%(ext)s",
 	)
 	args = append(args, fmtArgs...)
@@ -207,7 +235,7 @@ func (m *Manager) runOnce(j *Job) (*string, error) {
 	m.mu.Lock()
 	if j.canceled || m.closed {
 		m.mu.Unlock()
-		return nil, context.Canceled
+		return nil, false, context.Canceled
 	}
 	j.cancel = cancel
 	m.mu.Unlock()
@@ -215,19 +243,23 @@ func (m *Manager) runOnce(j *Job) (*string, error) {
 	stdout, _ := cmd.StdoutPipe()
 	stderr, _ := cmd.StderrPipe()
 	if err := cmd.Start(); err != nil {
-		return nil, &UserError{Msg: "The downloader could not be started: " + err.Error(), Code: "spawn"}
+		return nil, false, &UserError{Msg: "The downloader could not be started: " + err.Error(), Code: "spawn"}
 	}
 
 	var (
-		mu       sync.Mutex
-		final    string
-		errLines []string
-		partials = map[string]bool{}
+		mu         sync.Mutex
+		final      string
+		downloaded bool // any progress line means something was fetched
+		errLines   []string
+		partials   = map[string]bool{}
 	)
 	handle := func(line string) {
 		line = strings.TrimRight(line, "\r\n")
 		switch {
 		case strings.HasPrefix(line, markDL):
+			mu.Lock()
+			downloaded = true
+			mu.Unlock()
 			m.onProgress(j, strings.TrimPrefix(line, markDL), &mu, partials)
 		case strings.HasPrefix(line, markPP):
 			m.onPostprocess(j, strings.TrimPrefix(line, markPP))
@@ -269,15 +301,31 @@ func (m *Manager) runOnce(j *Job) (*string, error) {
 	m.mu.Unlock()
 	if canceled {
 		removePartials(settings.DownloadDir, partials)
-		return nil, context.Canceled
+		return nil, false, context.Canceled
 	}
 	if waitErr != nil {
-		return nil, Classify(strings.Join(errLines, "\n"))
+		return nil, false, Classify(strings.Join(errLines, "\n"))
 	}
 	if final == "" {
-		return nil, &UserError{Msg: "The download finished but the file could not be found.", Code: "no_file"}
+		return nil, false, &UserError{Msg: "The download finished but the file could not be found.", Code: "no_file"}
 	}
-	return &final, nil
+	return &final, !downloaded, nil
+}
+
+// cleanStale removes leftovers in the cache folder (from a crash or a
+// killed app) that are older than age. Fresh files may belong to a
+// download running in another instance, so they are left alone.
+func cleanStale(dir string, age time.Duration) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return
+	}
+	for _, e := range entries {
+		info, err := e.Info()
+		if err == nil && time.Since(info.ModTime()) > age {
+			_ = os.RemoveAll(filepath.Join(dir, e.Name()))
+		}
+	}
 }
 
 func (m *Manager) onProgress(j *Job, rest string, mu *sync.Mutex, partials map[string]bool) {
