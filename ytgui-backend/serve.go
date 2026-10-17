@@ -51,7 +51,10 @@ func serve(appData string, upd *updater.Manager, openBrowser bool) error {
 	// second instance can't see the first one's running downloads.
 	upd.AllowPrune = !inst.Secondary
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	// SIGHUP: closing the macOS Terminal window. SIGTERM: closing the
+	// Windows console (CTRL_CLOSE_EVENT). Both must stop downloads first,
+	// because yt-dlp runs in its own process group and would outlive us.
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
 	defer stop()
 
 	st := store.Open(appData)

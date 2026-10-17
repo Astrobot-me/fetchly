@@ -148,7 +148,8 @@ func (m *Manager) loadFeed(ctx context.Context) (*Feed, error) {
 	var err error
 	switch {
 	case src == "":
-		err = fmt.Errorf("no feed configured")
+		// No hosted feed set at build time: the embedded copy is the feed.
+		data = feed.Embedded
 	case strings.HasPrefix(src, "https://"):
 		var s string
 		s, err = m.fetchText(ctx, src)
@@ -157,7 +158,7 @@ func (m *Manager) loadFeed(ctx context.Context) (*Feed, error) {
 		data, err = os.ReadFile(src)
 	}
 	if err != nil {
-		m.logf("feed %s unavailable (%v), using embedded copy", src, err)
+		m.logf("tool list at %s could not be read (%v); using the built-in copy", src, err)
 		data = feed.Embedded
 	}
 	var f Feed
