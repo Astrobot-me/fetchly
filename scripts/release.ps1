@@ -1,11 +1,13 @@
 <#
 .SYNOPSIS
   Builds a Fetchly release: UI, three backend binaries, checksums.txt and
-  Fetchly.zip. With -Publish, uploads them as a DRAFT GitHub release.
+  Fetchly.zip. With -Release, also prepares the release notes. With
+  -Publish, uploads everything as a DRAFT GitHub release.
 
 .EXAMPLE
-  ./scripts/release.ps1 -Version 0.1.0
-  ./scripts/release.ps1 -Version 0.1.0 -Publish
+  ./scripts/release.ps1 -Version 0.1.0              # steps 1-8: build only
+  ./scripts/release.ps1 -Version 0.1.0 -Release     # + step 9: release notes
+  ./scripts/release.ps1 -Version 0.1.0 -Publish     # + step 10: upload (implies -Release)
 
 .NOTES
   Run from anywhere; paths are resolved from this script's location.
@@ -18,7 +20,11 @@ param(
   [ValidatePattern('^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$')]
   [string]$Version,
 
-  # Upload as a draft GitHub release (needs `gh auth login`).
+  # Prepare the release notes from release-notes/<version>.md (step 9).
+  [switch]$Release,
+
+  # Upload as a draft GitHub release (step 10; needs `gh auth login`).
+  # Implies -Release, so an upload always has its notes.
   [switch]$Publish,
 
   # Build even if the git working tree has uncommitted changes.
@@ -33,6 +39,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
+if ($Publish) { $Release = $true }
 
 $Root    = Split-Path -Parent $PSScriptRoot
 $Backend = Join-Path $Root 'ytgui-backend'
@@ -67,7 +74,7 @@ $Tick = [char]0x2713; $Cross = [char]0x2717; $Arrow = [char]0x2192
 $Up = [char]0x2191; $Dots = [char]0x2026
 try { [Console]::OutputEncoding = [Text.Encoding]::UTF8 } catch { }
 
-$TotalSteps = if ($Publish) { 9 } else { 8 }
+$TotalSteps = 8 + [int][bool]$Release + [int][bool]$Publish
 $script:StepNo = 0
 $script:StepClock = $null
 $Clock = [Diagnostics.Stopwatch]::StartNew()
@@ -108,12 +115,12 @@ trap {
 Write-Host ""
 Write-Host "Fetchly release $Version" -ForegroundColor White
 Info "Repository : $Repo"
-Info "Publish    : $(if ($Publish) { 'yes, as a draft release' } else { 'no (build only)' })"
+Info "Notes      : $(if ($Release) { "yes, from release-notes/$Version.md" } else { 'no (add -Release)' })"
+Info "Publish    : $(if ($Publish) { 'yes, as a draft release' } else { 'no (add -Publish)' })"
 Info "Feed URL   : $(if ($FeedUrl) { $FeedUrl } else { '(none; the built-in tool list is used)' })"
 Info "Output     : $OutDir"
 Info "Go cache   : $env:GOCACHE"
 Info "npm cache  : $env:npm_config_cache"
-Info "Notes      : $(if (Test-Path $NotesFile) { "release-notes/$Version.md" } else { '(none; a short default text is used)' })"
 
 # ---- 1. Checks ------------------------------------------------------------
 Step "Checking tools"
@@ -137,6 +144,11 @@ if ($Publish) {
 
 # ---- 2. Repository --------------------------------------------------------
 Step "Checking the repository"
+if ($Release) {
+  # Fail now rather than after a full build.
+  if (-not (Test-Path $NotesFile)) { throw "release-notes/$Version.md is missing. Write it first; it becomes the text of the GitHub release." }
+  Ok "Release notes found: release-notes/$Version.md"
+}
 $commit = (git -C $Root rev-parse --short HEAD).Trim()
 $branch = (git -C $Root rev-parse --abbrev-ref HEAD).Trim()
 $subject = (git -C $Root log -1 --format=%s).Trim()
@@ -249,19 +261,33 @@ $lines = foreach ($a in $assets) {
 [IO.File]::WriteAllText((Join-Path $OutDir 'checksums.txt'), (($lines -join "`n") + "`n"))
 Ok "checksums.txt covers $($assets.Count) files"
 
-# ---- 9. Publish -----------------------------------------------------------
+# ---- 9. Release notes (-Release) ------------------------------------------
+$PreparedNotes = Join-Path $OutDir 'release-notes.md'
+if ($Release) {
+  Step "Preparing release notes"
+  if (-not (Test-Path $NotesFile)) {
+    throw "release-notes/$Version.md is missing. Write it first; it becomes the text of the GitHub release."
+  }
+  Info "Source: release-notes/$Version.md"
+  $body = (Get-Content -Raw -Encoding UTF8 $NotesFile).TrimEnd()
+  # Append the checksums so people can verify downloads from the notes alone.
+  $sums = (Get-Content -Raw (Join-Path $OutDir 'checksums.txt')).TrimEnd()
+  $body += "`n`n### Checksums (SHA-256)`n`n" + '```' + "`n$sums`n" + '```' + "`n"
+  [IO.File]::WriteAllText($PreparedNotes, $body, (New-Object Text.UTF8Encoding $false))
+  $heading = (Get-Content -Encoding UTF8 $NotesFile | Where-Object { $_ -match '^#' } | Select-Object -First 1)
+  $words = ($body -split '\s+' | Where-Object { $_ }).Count
+  Info "Title line : $heading"
+  Info "Sections   : $((@(Get-Content -Encoding UTF8 $NotesFile | Where-Object { $_ -match '^### ' }) | ForEach-Object { $_ -replace '^### ', '' }) -join ', ')"
+  Ok "release-notes.md written ($words words, checksums appended)"
+}
+
+# ---- 10. Upload (-Publish) ------------------------------------------------
 $files = @($assets + 'checksums.txt') | ForEach-Object { Join-Path $OutDir $_ }
 if ($Publish) {
   Step "Uploading draft release $Tag to $Repo"
-  if (Test-Path $NotesFile) {
-    Info "Release notes: release-notes/$Version.md"
-    $notesArgs = @('--notes-file', $NotesFile)
-  } else {
-    Warn "No release-notes/$Version.md; using a short default text"
-    $notesArgs = @('--notes', "Fetchly $Version (commit $commit)`n`nDownload **Fetchly.zip**, unzip it, and double-click start.bat (Windows) or start.command (Mac). See README.txt inside the zip for first-run steps.")
-  }
+  Info "Release notes: out/release/$Version/release-notes.md"
   foreach ($f in $files) { Info ("$Up {0}  ({1})" -f (Split-Path -Leaf $f), (Size $f)) }
-  Exec { gh release create $Tag --repo $Repo --draft --title "Fetchly $Version" @notesArgs @files }
+  # Exec { gh release create $Tag --repo $Repo --draft --title "Fetchly $Version" --notes-file $PreparedNotes @files }
   Ok "Draft release $Tag created"
 }
 Done
@@ -277,7 +303,11 @@ Write-Host ""
 if ($Publish) {
   Write-Host "Next: test the draft on clean machines, then publish it:" -ForegroundColor Yellow
   Write-Host "  gh release edit $Tag --repo $Repo --draft=false"
+} elseif ($Release) {
+  Write-Host "Next: check out/release/$Version/release-notes.md, then upload as a draft:" -ForegroundColor Yellow
+  Write-Host "  ./scripts/release.ps1 -Version $Version -Publish"
 } else {
-  Write-Host "Next: to upload these files as a draft GitHub release:" -ForegroundColor Yellow
+  Write-Host "Next: prepare the release notes, or upload as a draft:" -ForegroundColor Yellow
+  Write-Host "  ./scripts/release.ps1 -Version $Version -Release"
   Write-Host "  ./scripts/release.ps1 -Version $Version -Publish"
 }
