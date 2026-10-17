@@ -190,7 +190,7 @@ func (m *Manager) runOnce(j *Job) (*string, error) {
 		"--print", "after_move:"+markFile+"%(filepath)s",
 		"--windows-filenames", "--no-mtime",
 		"-P", settings.DownloadDir,
-		"-o", "%(title).150B [%(id)s].%(ext)s",
+		"-o", "%(title).150B [%(id)s] "+fileSuffix(j.Quality)+".%(ext)s",
 	)
 	args = append(args, fmtArgs...)
 	args = append(args, "--", j.URL)

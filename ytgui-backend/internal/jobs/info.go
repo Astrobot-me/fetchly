@@ -229,6 +229,19 @@ func label(h int) string {
 	return fmt.Sprintf("%dp", h)
 }
 
+// fileSuffix names the chosen quality in the file name, so downloading
+// the same video in another quality makes a new file instead of being
+// skipped as "already downloaded".
+func fileSuffix(quality string) string {
+	switch quality {
+	case "best", "":
+		return "best"
+	case "audio":
+		return "audio"
+	}
+	return quality + "p"
+}
+
 // formatArgs maps a quality id to yt-dlp selection arguments.
 // -S res,vcodec:h264,ext:mp4:m4a keeps the highest resolution first and,
 // among equals, prefers H.264 and mp4/m4a so the file plays in any player.
