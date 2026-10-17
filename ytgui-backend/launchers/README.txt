@@ -38,8 +38,8 @@ WHERE THINGS ARE
 
   Your videos:   the Downloads folder, unless you choose another one
                  in Settings.
-  App files:     Windows  %LOCALAPPDATA%\ytgui
-                 Mac      ~/Library/Application Support/ytgui
+  App files:     Windows  %LOCALAPPDATA%\Fetchly
+                 Mac      ~/Library/Application Support/Fetchly
 
 To remove Fetchly, quit it and delete the app files folder and the
 folder that holds these start files. Your videos are not touched.

@@ -13,7 +13,7 @@ rem ----------------------------------------------------------------------
 
 rem YTGUI_DOWNLOAD_BASE and YTGUI_HOME are for testing only.
 if defined YTGUI_DOWNLOAD_BASE (set "BASE=%YTGUI_DOWNLOAD_BASE%") else (set "BASE=https://github.com/%REPO%/releases/latest/download")
-if defined YTGUI_HOME (set "DATA=%YTGUI_HOME%") else (set "DATA=%LOCALAPPDATA%\ytgui")
+if defined YTGUI_HOME (set "DATA=%YTGUI_HOME%") else (set "DATA=%LOCALAPPDATA%\Fetchly")
 set "APPDIR=%DATA%\app"
 set "EXE=%APPDIR%\fetchly.exe"
 

@@ -18,7 +18,7 @@ ASSET="fetchly-darwin-$ARCH"
 
 # YTGUI_DOWNLOAD_BASE and YTGUI_HOME are for testing only.
 BASE="${YTGUI_DOWNLOAD_BASE:-https://github.com/$REPO/releases/latest/download}"
-DATA="${YTGUI_HOME:-$HOME/Library/Application Support/ytgui}"
+DATA="${YTGUI_HOME:-$HOME/Library/Application Support/Fetchly}"
 APPDIR="$DATA/app"
 BIN="$APPDIR/fetchly"
 
