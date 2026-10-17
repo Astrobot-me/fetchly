@@ -9,7 +9,7 @@
             "url": "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-09-30-13-08/ffmpeg-n9.0.2-17-g2a571b6068-win64-gpl-9.0.zip",
             "sha256": "a0e45723c72141975f51d8666302e614711745f3102b704ca3f82c897a58d278",
             "archive": "zip",
-            "files": { "ffmpeg.exe": "bin/ffmpeg.exe", "ffprobe.exe": "bin/ffprobe.exe" }
+            "files": { "ffmpeg.exe": "bin/ffmpeg.exe" }
           }
         ],
         "darwin-arm64": [
@@ -18,12 +18,6 @@
             "sha256": "c8ed4c4e6978a03c485edbfe4e0a5dc2380f8a30bba5150531b31b094492d924",
             "archive": "zip",
             "files": { "ffmpeg": "ffmpeg" }
-          },
-          {
-            "url": "https://ffmpeg.martin-riedl.de/download/macos/arm64/1789931890_9.0.2/ffprobe.zip",
-            "sha256": "fcbe839537485eaee7a7a8bc5cbc0f90d53617e80943e8a5b2e31cb851197ea6",
-            "archive": "zip",
-            "files": { "ffprobe": "ffprobe" }
           }
         ],
         "darwin-amd64": [
@@ -32,12 +26,6 @@
             "sha256": "7c6b4125b191cbf773832dc51f424cf2b6bb7da43007d1e066f95909e47cacd4",
             "archive": "zip",
             "files": { "ffmpeg": "ffmpeg" }
-          },
-          {
-            "url": "https://ffmpeg.martin-riedl.de/download/macos/amd64/1789931006_9.0.2/ffprobe.zip",
-            "sha256": "2322438ed2f6319a691291b247d09c69dcaa3a982460d1f269a7e1af335cfdfd",
-            "archive": "zip",
-            "files": { "ffprobe": "ffprobe" }
           }
         ]
       }

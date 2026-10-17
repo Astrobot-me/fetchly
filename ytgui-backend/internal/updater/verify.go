@@ -189,22 +189,18 @@ func smokeTest(ctx context.Context, tool, dir string) error {
 		FFmpeg: {"-version"},
 		Deno:   {"--version"},
 	}
-	bins := []string{tool}
-	if tool == FFmpeg {
-		bins = append(bins, "ffprobe")
-	}
-	for _, b := range bins {
-		cmd := exec.CommandContext(ctx, filepath.Join(dir, paths.Exe(b)), checks[tool]...)
-		osutil.Background(cmd)
-		var out bytes.Buffer
-		cmd.Stdout, cmd.Stderr = &out, &out
-		if err := cmd.Run(); err != nil {
-			msg := strings.TrimSpace(out.String())
-			if len(msg) > 300 {
-				msg = msg[:300]
-			}
-			return errors.New("the new " + b + " would not start on this computer (" + err.Error() + ") " + msg)
+	// ffprobe is not installed: the app only needs ffmpeg for stream-copy
+	// merges, and audio is saved as-is instead of converted.
+	cmd := exec.CommandContext(ctx, filepath.Join(dir, paths.Exe(tool)), checks[tool]...)
+	osutil.Background(cmd)
+	var out bytes.Buffer
+	cmd.Stdout, cmd.Stderr = &out, &out
+	if err := cmd.Run(); err != nil {
+		msg := strings.TrimSpace(out.String())
+		if len(msg) > 300 {
+			msg = msg[:300]
 		}
+		return errors.New("the new " + tool + " would not start on this computer (" + err.Error() + ") " + msg)
 	}
 	return nil
 }

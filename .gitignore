@@ -14,3 +14,7 @@ ytgui-backend/web/dist/*
 Thumbs.db
 .vscode/
 .idea/
+
+# Local dev data (test installs, build caches)
+.devhome/
+.cache/
