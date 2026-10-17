@@ -1,0 +1,94 @@
+PS A:\Coday\code\downloader\scripts> .\release.ps1 -Version 0.2.0
+
+Fetchly release 0.2.0
+      Repository : astrobot-me/fetchly
+      Publish    : no (build only)
+      Feed URL   : (none; the built-in tool list is used)
+      Output     : A:\Coday\code\downloader\out\release\0.2.0
+      Go cache   : A:\Coday\code\downloader\.cache\go-build
+      npm cache  : A:\Coday\code\downloader\.cache\npm
+      Notes      : (none; a short default text is used)
+
+[1/8] Checking tools
+      ✓ Go      go1.26.5 windows/amd64
+      ✓ Node    v24.18.0
+      ✓ npm     12.0.2
+      ✓ git     2.51.2.windows.1
+      ✓ done in 0.6s
+
+[2/8] Checking the repository
+      Branch : master
+      Commit : c68e8fe  Add release notes for 0.1.0; keep release build caches in the repo
+      ✓ Working tree is clean
+      ✓ No dev server is using ytgui-web
+      ✓ done in 0.3s
+
+[3/8] Building the UI
+      Installing exact dependency versions from package-lock.json (npm ci)…
+
+added 24 packages in 10s
+      Type-checking and bundling (npm run build)…
+npm notice run ytgui-web@0.1.0 build
+npm notice run tsc -b && vite build
+vite v8.3.4 building client environment for production...
+transforming...
+✓ 32 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.55 kB │ gzip:  0.32 kB
+dist/assets/index-CoPgFTsB.css   17.82 kB │ gzip:  4.47 kB
+dist/assets/index-7oKS_IhY.js   253.04 kB │ gzip: 78.10 kB
+
+✓ built in 201ms
+      ✓ UI built: 4 files, 265 KB
+      ✓ done in 14.3s
+
+[4/8] Embedding the UI into the backend
+      Removed 3 old item(s) from web/dist
+      ✓ Copied ytgui-web/dist → ytgui-backend/web/dist
+      ✓ done in 0.1s
+
+[5/8] Building the backend for 3 platforms
+      Flags: CGO_ENABLED=0 -trimpath -ldflags "-s -w -X main.version=0.2.0"
+      (1/3) Windows (Intel/AMD 64-bit)  [windows/amd64]…
+      ✓ fetchly-windows-amd64.exe  7.6 MB  (3.4s)
+      (2/3) macOS (Apple Silicon)  [darwin/arm64]…
+      ✓ fetchly-darwin-arm64  7.0 MB  (2.9s)
+      (3/3) macOS (Intel)  [darwin/amd64]…
+      ✓ fetchly-darwin-amd64  7.5 MB  (2.4s)
+      ✓ done in 8.7s
+
+[6/8] Checking the built binaries
+      ✓ fetchly-windows-amd64.exe runs and reports version 0.2.0
+      The macOS binaries can't run here; test them on a Mac before publishing.
+      ✓ done in 0.7s
+
+[7/8] Building Fetchly.zip for users
+      + Fetchly/start.bat
+      + Fetchly/start.command
+      + Fetchly/README.txt
+      ✓ Fetchly.zip  3.9 KB  (start.command marked executable)
+      ✓ done in 0.4s
+
+[8/8] Writing checksums.txt
+      d8079bfb49d5c13683cb6fcf1e1c75b9e3424fa005beb059ba88031194594882  fetchly-windows-amd64.exe
+      8edf9d174790b610831770e90c46fa0ea6e79912ccaf2fc8d3caa1b35b2bf8c0  fetchly-darwin-arm64
+      5fab2e451d73ffc6cf549d6343dfd5acc6c5f8e64015d61ff54fd8c9122b23a4  fetchly-darwin-amd64
+      b14ed5a3f9e3abd3f39eb199433b6ab4a64779145e5d47603af9dd056b6aebda  Fetchly.zip
+      ✓ checksums.txt covers 4 files
+      ✓ done in 0.1s
+
+Release 0.2.0 ready in 25.3s
+
+Name                        Size
+----                        ----
+checksums.txt             0.3 KB
+fetchly-darwin-amd64      7.5 MB
+fetchly-darwin-arm64      7.0 MB
+fetchly-windows-amd64.exe 7.6 MB
+Fetchly.zip               3.9 KB
+
+Folder: A:\Coday\code\downloader\out\release\0.2.0
+
+Next: to upload these files as a draft GitHub release:
+  ./scripts/release.ps1 -Version 0.2.0 -Publish
