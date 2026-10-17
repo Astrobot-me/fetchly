@@ -16,5 +16,6 @@ Thumbs.db
 .idea/
 
 # Local dev data (test installs, build caches)
+.*/*
 .devhome/
 .cache/
