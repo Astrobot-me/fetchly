@@ -34,10 +34,10 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-$Backend = Split-Path -Parent $PSScriptRoot
-$Root    = Split-Path -Parent $Backend
+$Root    = Split-Path -Parent $PSScriptRoot
+$Backend = Join-Path $Root 'ytgui-backend'
 $Web     = Join-Path $Root 'ytgui-web'
-$OutDir  = Join-Path $Backend "out/release/$Version"
+$OutDir  = Join-Path $Root "out/release/$Version"
 $Tag     = "v$Version"
 # $IsWindows doesn't exist in Windows PowerShell 5.1 (and strict mode
 # rejects undefined variables), so ask .NET instead.
@@ -220,10 +220,9 @@ Info "The macOS binaries can't run here; test them on a Mac before publishing."
 # ---- 7. Zip ---------------------------------------------------------------
 Step "Building Fetchly.zip for users"
 foreach ($l in $Launchers) { Info "+ Fetchly/$(Split-Path -Leaf $l)" }
-Push-Location $Backend
-try {
-  Exec { go run ./scripts/mkzip -o (Join-Path $OutDir 'Fetchly.zip') -dir Fetchly @Launchers }
-} finally { Pop-Location }
+# mkzip uses only the standard library, so it runs as a single file
+# without being part of the backend's Go module.
+Exec { go run (Join-Path $PSScriptRoot 'mkzip/main.go') -o (Join-Path $OutDir 'Fetchly.zip') -dir Fetchly @Launchers }
 Ok ("Fetchly.zip  {0:N1} KB  (start.command marked executable)" -f ((Get-Item (Join-Path $OutDir 'Fetchly.zip')).Length / 1KB))
 
 # ---- 8. Checksums ---------------------------------------------------------

@@ -20,3 +20,6 @@ Thumbs.db
 .devhome*/
 .devrelease*/
 .cache/
+
+# Release output (scripts/release.ps1)
+/out/

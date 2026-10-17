@@ -5,7 +5,7 @@
 // Unix permissions, which Archive Utility and unzip honour. Line endings
 // are fixed per file type so the zip is the same whatever the checkout.
 //
-// Usage: go run ./scripts/mkzip -o out.zip -dir Fetchly file...
+// Usage: go run scripts/mkzip/main.go -o out.zip -dir Fetchly file...
 package main
 
 import (
