@@ -434,7 +434,7 @@ func (m *Manager) prune(tool string, c current) {
 	}
 }
 
-// Versions lists installed versions for each tool (for `ytgui versions`).
+// Versions lists installed versions for each tool (for `fetchly versions`).
 func (m *Manager) Versions(tool string) []string {
 	entries, _ := os.ReadDir(filepath.Join(m.toolDir(tool), "versions"))
 	var out []string

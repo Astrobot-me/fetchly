@@ -210,4 +210,4 @@ func (m *Manager) fetchText(ctx context.Context, url string) (string, error) {
 	return string(b), err
 }
 
-var userAgent = "ytgui-updater (" + runtime.GOOS + "/" + runtime.GOARCH + ")"
+var userAgent = "fetchly-updater (" + runtime.GOOS + "/" + runtime.GOARCH + ")"

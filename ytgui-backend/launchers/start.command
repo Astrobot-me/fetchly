@@ -14,13 +14,13 @@ if [ "$(sysctl -n hw.optional.arm64 2>/dev/null)" = "1" ]; then
 else
   ARCH=amd64
 fi
-ASSET="ytgui-darwin-$ARCH"
+ASSET="fetchly-darwin-$ARCH"
 
 # YTGUI_DOWNLOAD_BASE and YTGUI_HOME are for testing only.
 BASE="${YTGUI_DOWNLOAD_BASE:-https://github.com/$REPO/releases/latest/download}"
 DATA="${YTGUI_HOME:-$HOME/Library/Application Support/ytgui}"
 APPDIR="$DATA/app"
-BIN="$APPDIR/ytgui"
+BIN="$APPDIR/fetchly"
 
 fail() {
   echo
@@ -44,7 +44,7 @@ if [ ! -x "$BIN" ]; then
   fi
   mkdir -p "$APPDIR" || fail "Could not create the folder $APPDIR"
 
-  TMP="$APPDIR/ytgui.download"
+  TMP="$APPDIR/fetchly.download"
   SUMS="$APPDIR/checksums.txt"
   rm -f "$TMP" "$SUMS"
 

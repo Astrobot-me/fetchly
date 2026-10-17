@@ -54,7 +54,7 @@ func run(args []string) error {
 		return cliUpdate(upd, args[1:])
 	case "rollback":
 		if len(args) < 2 {
-			return fmt.Errorf("usage: ytgui rollback <tool>")
+			return fmt.Errorf("usage: fetchly rollback <tool>")
 		}
 		if err := upd.Rollback(args[1]); err != nil {
 			return err
@@ -62,7 +62,7 @@ func run(args []string) error {
 		fmt.Printf("%s is now %s\n", args[1], upd.Installed(args[1]))
 		return nil
 	case "versions":
-		fmt.Printf("ytgui %s\napp data: %s\n", version, appData)
+		fmt.Printf("fetchly %s\napp data: %s\n", version, appData)
 		for _, t := range updater.Tools {
 			cur := upd.Installed(t)
 			if cur == "" {
@@ -76,7 +76,7 @@ func run(args []string) error {
 		return nil
 	case "info", "get":
 		if len(args) < 2 {
-			return fmt.Errorf("usage: ytgui %s <url> [quality]", cmd)
+			return fmt.Errorf("usage: fetchly %s <url> [quality]", cmd)
 		}
 		return cliJob(upd, store.Open(appData), cmd, args[1:])
 	}

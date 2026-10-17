@@ -8,14 +8,14 @@ chcp 65001 >nul
 rem ---- Release settings -------------------------------------------------
 rem GitHub repository that hosts the release files (owner/name).
 set "REPO=astrobot-me/fetchly"
-set "ASSET=ytgui-windows-amd64.exe"
+set "ASSET=fetchly-windows-amd64.exe"
 rem ----------------------------------------------------------------------
 
 rem YTGUI_DOWNLOAD_BASE and YTGUI_HOME are for testing only.
 if defined YTGUI_DOWNLOAD_BASE (set "BASE=%YTGUI_DOWNLOAD_BASE%") else (set "BASE=https://github.com/%REPO%/releases/latest/download")
 if defined YTGUI_HOME (set "DATA=%YTGUI_HOME%") else (set "DATA=%LOCALAPPDATA%\ytgui")
 set "APPDIR=%DATA%\app"
-set "EXE=%APPDIR%\ytgui.exe"
+set "EXE=%APPDIR%\fetchly.exe"
 
 rem The app is downloaded only when it is missing. An existing copy is
 rem never replaced here; updates happen inside the app.
@@ -36,7 +36,7 @@ if not exist "%APPDIR%" (
   goto fail
 )
 
-set "TMPEXE=%APPDIR%\ytgui.download"
+set "TMPEXE=%APPDIR%\fetchly.download"
 set "SUMS=%APPDIR%\checksums.txt"
 del /f /q "%TMPEXE%" "%SUMS%" >nul 2>&1
 
