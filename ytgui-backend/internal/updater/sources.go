@@ -180,7 +180,7 @@ func (m *Manager) githubLatestTag(ctx context.Context, repo string) (string, err
 	client.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", err
+		return "", netErr(err)
 	}
 	resp.Body.Close()
 	loc := resp.Header.Get("Location")
@@ -196,15 +196,18 @@ func (m *Manager) githubLatestTag(ctx context.Context, repo string) (string, err
 }
 
 func (m *Manager) fetchText(ctx context.Context, url string) (string, error) {
-	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	req.Header.Set("User-Agent", userAgent)
-	resp, err := m.http.Do(req)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return "", err
 	}
+	req.Header.Set("User-Agent", userAgent)
+	resp, err := m.http.Do(req)
+	if err != nil {
+		return "", netErr(err)
+	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return "", fmt.Errorf("HTTP %d from %s", resp.StatusCode, url)
+		return "", fmt.Errorf("%s answered with HTTP %d", req.URL.Host, resp.StatusCode)
 	}
 	b, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	return string(b), err

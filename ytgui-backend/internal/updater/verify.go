@@ -66,7 +66,7 @@ func (m *Manager) download(ctx context.Context, tool, url, dest string, idx, tot
 	req.Header.Set("User-Agent", userAgent)
 	resp, err := m.http.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("could not download %s: %w", tool, err)
+		return "", fmt.Errorf("could not download %s: %w", tool, netErr(err))
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
